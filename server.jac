@@ -1,7 +1,10 @@
-
 import from rag {RagEngine}
 import from mtllm.llms {OpenAI}
 import from dotenv {load_dotenv}
+
+with entry {
+    load_dotenv();
+}  
 
 glob rag_engine: RagEngine = RagEngine();
 glob llm = OpenAI(model_name='gpt-4o-mini');

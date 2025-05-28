@@ -3,6 +3,7 @@ import from langchain_community.document_loaders {PyPDFDirectoryLoader}
 import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_community.embeddings.ollama {OllamaEmbeddings}
+import from langchain_community.embeddings.openai {OpenAIEmbeddings}
 import from langchain_community.vectorstores.chroma {Chroma}
 
 
@@ -32,7 +33,8 @@ can split_documents(documents: list[Document]) {
 
 
 can get_embedding_function {
-    embeddings = OllamaEmbeddings(model='nomic-embed-text');
+    # embeddings = OllamaEmbeddings(model='nomic-embed-text');
+    embeddings = OpenAIEmbeddings(model='text-embedding-3');
     return embeddings;
 }
 
@@ -56,7 +58,6 @@ can add_chunk_id(chunks: str) {
 
         chunk.metadata['id'] = chunk_id;
     }
-
     return chunks;
 }
 
