@@ -5,6 +5,10 @@ import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
 import from langchain_community.vectorstores.chroma {Chroma}
 
+# LightRAG imports
+import from lightrag {LightRAG}
+import from lightrag.llm.openai {gpt_4o_mini_complete, openai_embed}
+
 
 obj RagEngine {
     has file_path: str = "docs";
@@ -105,5 +109,50 @@ obj RagEngine {
         );
         results = db.similarity_search_with_score(query,k=chunck_nos);
         return results;
+    }
+}
+
+# -------------------------------------------------------
+# Minimal wrapper around LightRAG for PDF based docs
+obj LightRagEngine {
+    has file_path: str = "docs";
+    has working_dir: str = "lightrag_data";
+    has engine: LightRAG = None;
+
+    def postinit {
+        if not os.path.exists(self.file_path) {
+            os.makedirs(self.file_path);
+        }
+        self.engine = LightRAG(
+            working_dir=self.working_dir,
+            embedding_func=openai_embed,
+            llm_model_func=gpt_4o_mini_complete
+        );
+        self.load_existing();
+    }
+
+    def load_existing {
+        files = os.listdir(self.file_path);
+        for f in files {
+            if f.endswith('.pdf') {
+                self.add_file(os.path.join(self.file_path, f));
+            }
+        }
+    }
+
+    def load_document(file_path: str) {
+        loader = PyPDFLoader(file_path);
+        docs = loader.load();
+        content = "\n".join([d.page_content for d in docs]);
+        return content;
+    }
+
+    def add_file(file_path: str) {
+        text = self.load_document(file_path);
+        self.engine.insert(text, file_paths=[file_path]);
+    }
+
+    def query(q: str) {
+        return self.engine.query(q);
     }
 }
