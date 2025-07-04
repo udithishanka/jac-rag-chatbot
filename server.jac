@@ -1,10 +1,12 @@
 import from mtllm.llms {OpenAI}
-import from rag {RagEngine}
+import from rag {RagEngine, LightRagEngine}
 import os;
 import base64;
 import requests;
 
 glob rag_engine:RagEngine = RagEngine();
+
+glob light_engine: LightRagEngine = LightRagEngine();
 
 glob llm = OpenAI(model_name='gpt-4o');
 
@@ -62,7 +64,8 @@ walker interact {
         here.chat_history.append({"role": "user", "content": self.message});
         docs = rag_engine.get_from_chroma(query=self.message);
         web = web_search.search(query=self.message);
-        context = {"docs": docs, "web": web};
+        lr_answer = light_engine.query(self.message);
+        context = {"docs": docs, "web": web, "light_rag": lr_answer};
         response = here.respond(
             message=self.message,
             chat_history=here.chat_history,
@@ -90,6 +93,7 @@ walker upload_pdf {
             f.write(data);
         }
         rag_engine.add_file(file_path);
+        light_engine.add_file(file_path);
         report {"status": "uploaded"};
     }
 }

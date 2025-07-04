@@ -4,6 +4,8 @@ This project demonstrates a simple Retrieval-Augmented Generation (RAG) chatbot 
 
 The server now integrates optional web search via the [Serper](https://serper.dev) API. Set the `SERPER_API_KEY` environment variable before starting the server to enable this feature.
 
+LightRAG support has been added. Install the `lightrag-hku` package to enable a lightweight knowledge graph backend that complements the standard vector store.
+
 ## Uploading PDFs
 
 1. Start the Jaseci server with `server.jac`.
