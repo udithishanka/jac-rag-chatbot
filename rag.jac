@@ -4,6 +4,10 @@ import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
 import from langchain_community.vectorstores.chroma {Chroma}
+import from PIL {Image};
+import pytesseract;
+import whisper;
+import from moviepy.editor {VideoFileClip};
 
 
 obj RagEngine {
@@ -28,8 +32,29 @@ obj RagEngine {
     }
 
     def load_document(file_path: str) {
-        loader = PyPDFLoader(file_path);
-        return loader.load();
+        ext = os.path.splitext(file_path)[1].lower();
+        if ext == '.pdf' {
+            loader = PyPDFLoader(file_path);
+            return loader.load();
+        } else if ext in ['.png', '.jpg', '.jpeg'] {
+            text = pytesseract.image_to_string(Image.open(file_path));
+            return [Document(page_content=text, metadata={'source': file_path})];
+        } else if ext in ['.mp3', '.wav'] {
+            model = whisper.load_model('base');
+            result = model.transcribe(file_path);
+            text = result.get('text', '');
+            return [Document(page_content=text, metadata={'source': file_path})];
+        } else if ext in ['.mp4', '.mov', '.avi'] {
+            clip = VideoFileClip(file_path);
+            audio_path = f"{file_path}.wav";
+            clip.audio.write_audiofile(audio_path);
+            model = whisper.load_model('base');
+            result = model.transcribe(audio_path);
+            text = result.get('text', '');
+            os.remove(audio_path);
+            return [Document(page_content=text, metadata={'source': file_path})];
+        }
+        return [];
     }
 
     def add_file(file_path: str) {
