@@ -76,7 +76,7 @@ walker interact {
     }
 }
 
-walker upload_pdf {
+walker upload_file {
     has file_name: str;
     has file_data: str;
 

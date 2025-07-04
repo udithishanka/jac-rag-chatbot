@@ -11,11 +11,11 @@ def bootstrap_frontend(token: str) {
         st.session_state.messages = [];
     }
 
-    uploaded_file = st.file_uploader('Upload PDF');
+    uploaded_file = st.file_uploader('Upload File', type=['pdf','png','jpg','jpeg','mp3','wav','mp4','mov','avi']);
     if uploaded_file {
         file_b64 = base64.b64encode(uploaded_file.read()).decode('utf-8');
         response = requests.post(
-            "http://localhost:8000/walker/upload_pdf",
+            "http://localhost:8000/walker/upload_file",
             json={"file_name": uploaded_file.name, "file_data": file_b64},
             headers={"Authorization": f"Bearer {token}"}
         );
