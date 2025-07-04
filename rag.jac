@@ -1,5 +1,5 @@
 import os;
-import from langchain_community.document_loaders {PyPDFDirectoryLoader}
+import from langchain_community.document_loaders {PyPDFDirectoryLoader, PyPDFLoader}
 import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
@@ -11,6 +11,9 @@ obj RagEngine {
     has chroma_path: str = "chroma";
 
     def postinit {
+        if not os.path.exists(self.file_path) {
+            os.makedirs(self.file_path);
+        }
         documents: list = self.load_documents();
         chunks: list = self.split_documents(documents);
         self.add_to_chroma(chunks);
@@ -22,6 +25,17 @@ obj RagEngine {
         print("Loading documents from", document_loader);
         print("Document loader is", document_loader.load());
         return document_loader.load();
+    }
+
+    def load_document(file_path: str) {
+        loader = PyPDFLoader(file_path);
+        return loader.load();
+    }
+
+    def add_file(file_path: str) {
+        documents = self.load_document(file_path);
+        chunks = self.split_documents(documents);
+        self.add_to_chroma(chunks);
     }
 
     def split_documents(documents: list[Document]) {

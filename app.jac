@@ -1,15 +1,32 @@
 import streamlit as st;
 import requests;
+import base64;
 
 
-def bootstrap_frontend (token: str) {
+def bootstrap_frontend(token: str) {
     st.title("Welcome to your Demo Agent!");
-
+    st.set_page_config(layout="wide");
     # Initialize chat history
     if "messages" not in st.session_state {
         st.session_state.messages = [];
     }
-        if prompt := st.chat_input("What is up?") {
+
+    uploaded_file = st.file_uploader('Upload PDF');
+    if uploaded_file {
+        file_b64 = base64.b64encode(uploaded_file.read()).decode('utf-8');
+        response = requests.post(
+            "http://localhost:8000/walker/upload_pdf",
+            json={"file_name": uploaded_file.name, "file_data": file_b64},
+            headers={"Authorization": f"Bearer {token}"}
+        );
+        if response.status_code == 200 {
+            st.success(f"Uploaded {uploaded_file.name}");
+        } else {
+            st.error(f"Failed to upload {uploaded_file.name}");
+        }
+    }
+
+    if prompt := st.chat_input("What is up?") {
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt});
 
