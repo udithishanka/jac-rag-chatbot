@@ -2,6 +2,8 @@
 
 This project demonstrates a simple Retrieval-Augmented Generation (RAG) chatbot built with Jaseci. It exposes a Streamlit based front‑end and an API powered back‑end.
 
+The server now integrates optional web search via the [Serper](https://serper.dev) API. Set the `SERPER_API_KEY` environment variable before starting the server to enable this feature.
+
 ## Uploading PDFs
 
 1. Start the Jaseci server with `server.jac`.

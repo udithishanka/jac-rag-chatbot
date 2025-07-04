@@ -2,10 +2,39 @@ import from mtllm.llms {OpenAI}
 import from rag {RagEngine}
 import os;
 import base64;
+import requests;
 
 glob rag_engine:RagEngine = RagEngine();
 
 glob llm = OpenAI(model_name='gpt-4o');
+
+glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
+
+obj WebSearch {
+    has api_key: str = SERPER_API_KEY;
+    has base_url: str = "https://google.serper.dev/search";
+
+    def search(query: str) {
+        headers = {"X-API-KEY": self.api_key, "Content-Type": "application/json"};
+        payload = {"q": query};
+        resp = requests.post(self.base_url, headers=headers, json=payload);
+        if resp.status_code == 200 {
+            data = resp.json();
+            summary = "";
+            results = data.get("organic", []) if isinstance(data, dict) else [];
+            for r in results[:3] {
+                summary += f"{r.get('title', '')}: {r.get('link', '')}\n";
+                if r.get('snippet') {
+                    summary += f"{r['snippet']}\n";
+                }
+            }
+            return summary;
+        }
+        return f"Serper request failed: {resp.status_code}";
+    }
+}
+
+glob web_search: WebSearch = WebSearch();
 
 node Session {
     has id: str;
@@ -31,12 +60,14 @@ walker interact {
 
     can chat with Session entry {
         here.chat_history.append({"role": "user", "content": self.message});
-        data = rag_engine.get_from_chroma(query=self.message);
+        docs = rag_engine.get_from_chroma(query=self.message);
+        web = web_search.search(query=self.message);
+        context = {"docs": docs, "web": web};
         response = here.respond(
             message=self.message,
             chat_history=here.chat_history,
-            agent_role="You are a conversation agent designed to help users with their queries based on the documents provided",
-            context=data
+            agent_role="You are a conversation agent designed to help users with their queries based on the documents provided and web search results",
+            context=context
         );
 
         here.chat_history.append({"role": "assistant", "content": response});
