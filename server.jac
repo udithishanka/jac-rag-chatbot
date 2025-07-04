@@ -1,5 +1,7 @@
 import from mtllm.llms {OpenAI}
 import from rag {RagEngine}
+import os;
+import base64;
 
 glob rag_engine:RagEngine = RagEngine();
 
@@ -40,6 +42,24 @@ walker interact {
         here.chat_history.append({"role": "assistant", "content": response});
 
         report {"response": response};  
+    }
+}
+
+walker upload_pdf {
+    has file_name: str;
+    has file_data: str;
+
+    can save_doc with `root entry {
+        if not os.path.exists(rag_engine.file_path) {
+            os.makedirs(rag_engine.file_path);
+        }
+        file_path = os.path.join(rag_engine.file_path, self.file_name);
+        data = base64.b64decode(self.file_data.encode('utf-8'));
+        with open(file_path, 'wb') as f {
+            f.write(data);
+        }
+        rag_engine.add_file(file_path);
+        report {"status": "uploaded"};
     }
 }
 
