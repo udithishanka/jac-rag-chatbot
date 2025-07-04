@@ -2,3 +2,4 @@ __jac_gen__
 docs/
 mydatabase/
 .env
+chroma/
