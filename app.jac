@@ -5,7 +5,7 @@ import base64;
 
 def bootstrap_frontend(token: str) {
     st.set_page_config(layout="wide");
-    st.title("Welcome to your Demo Agent!");
+    st.title("Welcome to your RAG Chatbot!");
     # Initialize chat history
     if "messages" not in st.session_state {
         st.session_state.messages = [];
