@@ -44,6 +44,17 @@ node Session {
     def respond(message:str, chat_history:str, agent_role:str,  context:str) -> str by llm();
 }
 
+enum ChatType {
+    RAG : 'Need to use Retrievable information in specific documents to respond' = "RAG",
+    QA : 'Given context is enough for an answer' = "user_qa",
+    WEB : 'Need to use web search results to respond' = "web_search"
+}
+
+node Router {
+    has message: str;
+
+    def classify(message:str) -> ChatType by llm(method="Reason", temperature=0.0);
+}
 
 walker interact {
     has message: str;
