@@ -1,10 +1,12 @@
 import os;
+import requests;
 import from langchain_community.document_loaders {PyPDFDirectoryLoader, PyPDFLoader}
 import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
 import from langchain_community.vectorstores.chroma {Chroma}
 
+glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
 
 obj RagEngine {
     has file_path: str = "docs";
@@ -105,5 +107,42 @@ obj RagEngine {
         );
         results = db.similarity_search_with_score(query,k=chunck_nos);
         return results;
+    }
+
+    def search(query: str, chunck_nos: int=5) {
+        results = self.get_from_chroma(query=query, chunck_nos=chunck_nos);
+        summary = "";
+        for (doc, score) in results {
+            page = doc.metadata.get('page');
+            source = doc.metadata.get('source');
+            chunk_txt = doc.page_content[:400];
+            summary += f"{source} page {page}: {chunk_txt}\n";
+        }
+        return summary;
+    }
+}
+
+
+obj WebSearch {
+    has api_key: str = SERPER_API_KEY;
+    has base_url: str = "https://google.serper.dev/search";
+
+    def search(query: str) {
+        headers = {"X-API-KEY": self.api_key, "Content-Type": "application/json"};
+        payload = {"q": query};
+        resp = requests.post(self.base_url, headers=headers, json=payload);
+        if resp.status_code == 200 {
+            data = resp.json();
+            summary = "";
+            results = data.get("organic", []) if isinstance(data, dict) else [];
+            for r in results[:3] {
+                summary += f"{r.get('title', '')}: {r.get('link', '')}\n";
+                if r.get('snippet') {
+                    summary += f"{r['snippet']}\n";
+                }
+            }
+            return summary;
+        }
+        return f"Serper request failed: {resp.status_code}";
     }
 }
