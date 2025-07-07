@@ -3,3 +3,5 @@ docs/
 mydatabase/
 .env
 chroma/
+__pycache__/
+*.pyc
