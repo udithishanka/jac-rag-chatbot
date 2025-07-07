@@ -1,47 +1,34 @@
 import from mtllm.llms {OpenAI}
-import from rag {RagEngine}
+import from rag {RagEngine, WebSearch}
 import os;
 import base64;
 import requests;
 
 glob rag_engine:RagEngine = RagEngine();
-
 glob llm = OpenAI(model_name='gpt-4o');
-
 glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
+glob web_search: WebSearch = WebSearch();
 
-obj WebSearch {
-    has api_key: str = SERPER_API_KEY;
-    has base_url: str = "https://google.serper.dev/search";
-
-    def search(query: str) {
-        headers = {"X-API-KEY": self.api_key, "Content-Type": "application/json"};
-        payload = {"q": query};
-        resp = requests.post(self.base_url, headers=headers, json=payload);
-        if resp.status_code == 200 {
-            data = resp.json();
-            summary = "";
-            results = data.get("organic", []) if isinstance(data, dict) else [];
-            for r in results[:3] {
-                summary += f"{r.get('title', '')}: {r.get('link', '')}\n";
-                if r.get('snippet') {
-                    summary += f"{r['snippet']}\n";
-                }
-            }
-            return summary;
-        }
-        return f"Serper request failed: {resp.status_code}";
-    }
+def search_web(query: str) -> str {
+    return web_search.search(query=query);
 }
 
-glob web_search: WebSearch = WebSearch();
+def search_docs(query: str) -> str {
+    return rag_engine.search(query=query);
+}
 
 node Session {
     has id: str;
     has chat_history: list[dict];
     has status: int = 1;
 
-    def respond(message:str, chat_history:str, agent_role:str,  context:str) -> str by llm();
+    """Generate a response using uploaded documents and web search."""
+    def respond(message:str, chat_history:list[dict]) -> str
+        by llm(
+            method="ReAct",
+            tools=[search_docs, search_web],
+            max_react_iterations=6
+        );
 }
 
 
@@ -53,26 +40,20 @@ walker interact {
          visit [-->](`?Session)(?id == self.session_id) else {
             session_node = here ++> Session(id=self.session_id, chat_history=[], status=1);
             print("Session Node Created");
-
             visit session_node;
         }
     }
 
     can chat with Session entry {
         here.chat_history.append({"role": "user", "content": self.message});
-        docs = rag_engine.get_from_chroma(query=self.message);
-        web = web_search.search(query=self.message);
-        context = {"docs": docs, "web": web};
         response = here.respond(
             message=self.message,
-            chat_history=here.chat_history,
-            agent_role="You are a conversation agent designed to help users with their queries based on the documents provided and web search results",
-            context=context
+            chat_history=here.chat_history
         );
 
         here.chat_history.append({"role": "assistant", "content": response});
 
-        report {"response": response};  
+        report {"response": response};
     }
 }
 
