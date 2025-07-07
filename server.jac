@@ -9,7 +9,7 @@ import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
 glob llm = OpenAI(model_name='gpt-4o');
-glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
+
 glob web_search: WebSearch = WebSearch();
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
@@ -31,8 +31,8 @@ node Session {
     has chat_history: list[dict];
     has status: int = 1;
 
-    """Generate a response using uploaded documents and web search."""
-    def respond(message:str, chat_history:list[dict], allow_mcp: bool=false) -> str
+    """Generate a response using uploaded documents and web search. Tool names are 'search_docs', 'search_web'."""
+    def respond(message:str, chat_history:list[dict], allow_mcp: bool=False) -> str
         by llm(
             method="ReAct",
             tools=[search_docs, search_web] + ([call_mcp_tool] if allow_mcp else []),
