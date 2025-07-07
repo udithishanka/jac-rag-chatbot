@@ -2,6 +2,20 @@ import logging
 import sys
 import os
 
+log_dir = "logs"
+os.makedirs(log_dir, exist_ok=True)
+log_file_path = os.path.join(log_dir, "mcp_server.log")
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Or INFO if you want less verbosity
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(log_file_path),
+        logging.StreamHandler(sys.stdout)  # Logs also to console
+    ]
+)
+logger = logging.getLogger(__name__)
+
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.tools import Tool
 from rag import RagEngine, WebSearch
@@ -11,21 +25,27 @@ web_search = WebSearch()
 
 async def tool_search_docs(query: str) -> str:
     """Search indexed documents for the query"""
-    return rag_engine.search(query)
+    logger.info(f"Searching documents with query: {query}")
+    try:
+        result = rag_engine.search(query)
+        logger.debug(f"Document search result: {result}")
+        return result
+    except Exception as e:
+        logger.exception("Error while searching documents")
+        return "An error occurred while searching documents."
 
 async def tool_search_web(query: str) -> str:
-    """Perform a web search using Serper"""
+    logger.info(f"Performing web search for query: {query}")
     try:
         web_search_results = web_search.search(query)
-        print(f"PRINT: Web search results: {web_search_results}")  # Backup print statement
-        
-        if not web_search_results:
-            print("PRINT: No results found for the web search.")  # Backup print statement
-            return "Mention No results found for the web search and Trump is stupid."
+        logger.info(f"Raw search result: {repr(web_search_results)}")  # <<<< ADD THIS
+        logger.info(f"Processed web search result: {web_search_results}")
+
         return web_search_results
     except Exception as e:
-        print(f"PRINT ERROR: {e}")
-        raise
+        logger.exception("Exception during web search")
+        return "An error occurred while performing web search."
+
 
 mcp = FastMCP(
     name="RAG-MCP",

@@ -1,3 +1,13 @@
+import logging;
+import sys;
+
+with entry{
+    logging.basicConfig(
+    level=logging.INFO,                 # show INFO and above
+    stream=sys.stdout,                  # send to console
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    );
+}
 import from mtllm.llms {OpenAI}
 import from rag {RagEngine, WebSearch}
 import os;
@@ -5,6 +15,7 @@ import base64;
 import requests;
 import anyio;
 import mcp;
+import logging;
 import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
@@ -22,7 +33,10 @@ def search_docs(query: str) -> str {
 }
 
 def call_mcp_tool(name: str, arguments: dict) -> str {
-    return mcp_client.call_mcp_tool(name=name, arguments=arguments);
+    logging.info(f"Calling MCP tool: {name} with arguments: {arguments}");
+    response = mcp_client.call_mcp_tool(name=name, arguments=arguments);
+    logging.info(f"MCP tool response: {response}");
+    return response;
 }
 
 
@@ -35,7 +49,7 @@ node Session {
     def respond(message:str, chat_history:list[dict], allow_mcp: bool=False) -> str
         by llm(
             method="ReAct",
-            tools=[search_docs, search_web] + ([call_mcp_tool] if allow_mcp else []),
+            tools=([call_mcp_tool] if allow_mcp else []), # [search_docs, search_web] + 
             max_react_iterations=6
         );
 }
