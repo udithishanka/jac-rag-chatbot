@@ -5,7 +5,7 @@ import base64;
 
 def bootstrap_frontend(token: str) {
     st.set_page_config(layout="wide");
-    st.title("Welcome to your RAG Chatbot!");
+    st.title("Welcome to your Jac MCP Chatbot!");
     # Initialize chat history
     if "messages" not in st.session_state {
         st.session_state.messages = [];
@@ -36,21 +36,22 @@ def bootstrap_frontend(token: str) {
         }
         # Display assistant response in chat message container
         with st.chat_message("assistant") {
+            with st.spinner("Thinking...") {
+                # Call walker API
+                response = requests.post(
+                    "http://localhost:8000/walker/interact",
+                    json={"message": prompt, "session_id": "123"},
+                    headers={"Authorization": f"Bearer {token}"}
+                );
 
-            # Call walker API
-            response = requests.post(
-                "http://localhost:8000/walker/interact",
-                json={"message": prompt, "session_id": "123"},
-                headers={"Authorization": f"Bearer {token}"}
-            );
+                if response.status_code == 200 {
+                    response = response.json();
+                    print("response is",response);
+                    st.write(response["reports"][0]["response"]);
 
-            if response.status_code == 200 {
-                response = response.json();
-                print("response is",response);
-                st.write(response["reports"][0]["response"]);
-
-                # Add assistant response to chat history
-                st.session_state.messages.append({"role": "assistant", "content": response["reports"][0]["response"]});
+                    # Add assistant response to chat history
+                    st.session_state.messages.append({"role": "assistant", "content": response["reports"][0]["response"]});
+                }
             }
         }
     }
