@@ -18,7 +18,7 @@ import mcp;
 import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
-glob llm = Model(model_name='gpt-4o', verbose=True);
+glob llm = Model(model_name='gpt-4o', verbose=True); # 
 
 glob web_search: WebSearch = WebSearch();
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
@@ -32,8 +32,13 @@ def search_docs(query: str) -> str {
 }
 
 
-"""Available Tool names are 'search_docs', 'search_web'. arguments is what you need to look for."""
-def search_web(name: str, arguments: dict) -> str {
+"""Available Tool names are 'search_docs', 'search_web'. arguments should be a dictionary with the query. 
+Example:{
+    name:"search_docs", arguments:{"query": "user query"},
+    name:"search_web", arguments:{"query": "user query"}
+}
+"""
+def use_tool(name: str, arguments: dict[str, str]) -> str {
     logging.info(f"Calling MCP tool: {name} with arguments: {arguments}");
     response = mcp_client.call_mcp_tool(name=name, arguments=arguments);
     logging.info(f"MCP tool response: {response}");
@@ -50,7 +55,7 @@ node Session {
     def respond(message:str, chat_history:list[dict], allow_mcp: bool=True) -> str
         by llm(
             method="ReAct",
-            tools=([search_web] if allow_mcp else []), # [search_docs, search_web] + 
+            tools=([use_tool] if allow_mcp else []), # [search_docs, search_web] + 
             max_react_iterations=6
         );
 }
