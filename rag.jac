@@ -4,7 +4,7 @@ import from langchain_community.document_loaders {PyPDFDirectoryLoader, PyPDFLoa
 import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
-import from langchain_community.vectorstores.chroma {Chroma}
+import from langchain_chroma {Chroma}
 
 glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
 
