@@ -2,11 +2,11 @@ import base64;
 import sys;
 import os;
 import mcp_client;
-import from mtllm.llms {OpenAI}
+import from mtllm.llm {Model}
 import from rag {RagEngine}
 
 glob rag_engine:RagEngine = RagEngine();
-glob llm = OpenAI(model_name='gpt-4o');
+glob llm = Model(model_name='gpt-4o');
 
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
