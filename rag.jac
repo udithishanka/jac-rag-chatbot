@@ -4,7 +4,7 @@ import from langchain_community.document_loaders {PyPDFDirectoryLoader, PyPDFLoa
 import from langchain_text_splitters {RecursiveCharacterTextSplitter}
 import from langchain.schema.document {Document}
 import from langchain_openai {OpenAIEmbeddings}
-import from langchain_community.vectorstores.chroma {Chroma}
+import from langchain_chroma {Chroma}
 
 glob SERPER_API_KEY: str = os.getenv('SERPER_API_KEY', '');
 
@@ -19,13 +19,10 @@ obj RagEngine {
         documents: list = self.load_documents();
         chunks: list = self.split_documents(documents);
         self.add_to_chroma(chunks);
-        print("Documents loaded from", self.file_path);
     }
 
     def load_documents {
         document_loader = PyPDFDirectoryLoader(self.file_path);
-        print("Loading documents from", document_loader);
-        print("Document loader is", document_loader.load());
         return document_loader.load();
     }
 

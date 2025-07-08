@@ -1,44 +1,18 @@
-import logging;
-import sys;
-
-with entry{
-    logging.basicConfig(
-    level=logging.INFO,                 # show INFO and above
-    stream=sys.stdout,                  # send to console
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    );
-}
-import from mtllm.llms {OpenAI}
-import from rag {RagEngine, WebSearch}
-import os;
 import base64;
-import requests;
-import anyio;
-import mcp;
-import logging;
+import sys;
+import os;
 import mcp_client;
+import from mtllm.llms {OpenAI}
+import from rag {RagEngine}
 
 glob rag_engine:RagEngine = RagEngine();
 glob llm = OpenAI(model_name='gpt-4o');
 
-glob web_search: WebSearch = WebSearch();
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
-def search_web(query: str) -> str {
-    return web_search.search(query=query);
-}
-
-def search_docs(query: str) -> str {
-    return rag_engine.search(query=query);
-}
-
 def call_mcp_tool(name: str, arguments: dict) -> str {
-    logging.info(f"Calling MCP tool: {name} with arguments: {arguments}");
-    response = mcp_client.call_mcp_tool(name=name, arguments=arguments);
-    logging.info(f"MCP tool response: {response}");
-    return response;
+    return mcp_client.call_mcp_tool(name=name, arguments=arguments);
 }
-
 
 node Session {
     has id: str;
@@ -46,10 +20,10 @@ node Session {
     has status: int = 1;
 
     """Generate a response using uploaded documents and web search. Tool names are 'search_docs', 'search_web'."""
-    def respond(message:str, chat_history:list[dict], allow_mcp: bool=False) -> str
+    def respond(message:str, chat_history:list[dict]) -> str
         by llm(
             method="ReAct",
-            tools=([call_mcp_tool] if allow_mcp else []), # [search_docs, search_web] + 
+            tools=([call_mcp_tool]),
             max_react_iterations=6
         );
 }
@@ -58,7 +32,6 @@ node Session {
 walker interact {
     has message: str;
     has session_id: str;
-    has allow_mcp: bool = false;
 
     can init_session with `root entry {
          visit [-->](`?Session)(?id == self.session_id) else {
@@ -73,7 +46,6 @@ walker interact {
         response = here.respond(
             message=self.message,
             chat_history=here.chat_history,
-            allow_mcp=self.allow_mcp
         );
 
         here.chat_history.append({"role": "assistant", "content": response});

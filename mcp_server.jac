@@ -13,8 +13,8 @@ with entry {
     mcp = FastMCP(name="RAG-MCP", port=8899);
 }
 
-def resolve_hints(fn: typing.Callable) -> typing.Callable {
-    fn.__annotations__ = typing.get_type_hints(fn, include_extras=True);
+def resolve_hints(fn: typing.Callable) -> typing.Callable { 
+    fn.__annotations__ = typing.get_type_hints(fn, include_extras=True); # To Resolve Pydantic Issue
     return fn;
 }
 

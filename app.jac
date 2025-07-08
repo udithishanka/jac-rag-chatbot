@@ -10,7 +10,6 @@ def bootstrap_frontend(token: str) {
     if "messages" not in st.session_state {
         st.session_state.messages = [];
     }
-    allow_mcp = st.checkbox('Allow MCP tools');
 
     uploaded_file = st.file_uploader('Upload PDF');
     if uploaded_file {
@@ -41,7 +40,7 @@ def bootstrap_frontend(token: str) {
             # Call walker API
             response = requests.post(
                 "http://localhost:8000/walker/interact",
-                json={"message": prompt, "session_id": "123", "allow_mcp": allow_mcp},
+                json={"message": prompt, "session_id": "123"},
                 headers={"Authorization": f"Bearer {token}"}
             );
 

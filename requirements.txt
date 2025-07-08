@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchain-openai
+langchain-chroma
+chromadb
+openai
+pypdf
+tiktoken
+requests
+jac-streamlit
+mcp[cli]
+anyio
