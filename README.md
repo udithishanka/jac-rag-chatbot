@@ -6,7 +6,7 @@ The server now integrates optional web search via the [Serper](https://serper.de
 
 ### MCP integration
 
-This repo also exposes a simple [Model Context Protocol](https://github.com/anthropic-ai/mcp) server. Start it with `python mcp_server.py` to provide additional tools over MCP. The Streamlit UI has a *Allow MCP tools* checkbox. When enabled, the backend will connect to the MCP server specified by the `MCP_SERVER_URL` environment variable (defaults to `http://localhost:8899/mcp`) and let the language model call the registered tools during a chat session.
+This repo also exposes a simple [Model Context Protocol](https://github.com/anthropic-ai/mcp) server. Start it with `python mcp_server.py` to provide additional tools over MCP. When enabled, the backend will connect to the MCP server specified by the `MCP_SERVER_URL` environment variable (defaults to `http://localhost:8899/mcp`) and let the language model call the registered tools during a chat session.
 
 ## Uploading PDFs
 
