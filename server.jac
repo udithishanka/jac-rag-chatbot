@@ -8,18 +8,17 @@ with entry{
     format="%(asctime)s | %(levelname)s | %(message)s",
     );
 }
-import from mtllm.llms {OpenAI}
+import from mtllm.llm {Model}
 import from rag {RagEngine, WebSearch}
 import os;
 import base64;
 import requests;
 import anyio;
 import mcp;
-import logging;
 import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
-glob llm = OpenAI(model_name='gpt-4o');
+glob llm = Model(model_name='gpt-4o', verbose=True);
 
 glob web_search: WebSearch = WebSearch();
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
@@ -32,7 +31,9 @@ def search_docs(query: str) -> str {
     return rag_engine.search(query=query);
 }
 
-def call_mcp_tool(name: str, arguments: dict) -> str {
+
+"""Available Tool names are 'search_docs', 'search_web'. arguments is what you need to look for."""
+def search_web(name: str, arguments: dict) -> str {
     logging.info(f"Calling MCP tool: {name} with arguments: {arguments}");
     response = mcp_client.call_mcp_tool(name=name, arguments=arguments);
     logging.info(f"MCP tool response: {response}");
@@ -45,11 +46,11 @@ node Session {
     has chat_history: list[dict];
     has status: int = 1;
 
-    """Generate a response using uploaded documents and web search. Tool names are 'search_docs', 'search_web'."""
-    def respond(message:str, chat_history:list[dict], allow_mcp: bool=False) -> str
+    "Respond to a user message using the chat history and using mcp tool with correct names."
+    def respond(message:str, chat_history:list[dict], allow_mcp: bool=True) -> str
         by llm(
             method="ReAct",
-            tools=([call_mcp_tool] if allow_mcp else []), # [search_docs, search_web] + 
+            tools=([search_web] if allow_mcp else []), # [search_docs, search_web] + 
             max_react_iterations=6
         );
 }
@@ -58,7 +59,7 @@ node Session {
 walker interact {
     has message: str;
     has session_id: str;
-    has allow_mcp: bool = false;
+    has allow_mcp: bool = True;
 
     can init_session with `root entry {
          visit [-->](`?Session)(?id == self.session_id) else {
