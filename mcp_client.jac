@@ -3,11 +3,7 @@ import mcp;
 import os;
 import from mcp.client { streamable_http }
 
-
-with entry {
-    MCP_SERVER_URL = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
-}
-
+glob MCP_SERVER_URL = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
 def call_mcp_tool(name: str, arguments:dict) -> str {
     async def _call()  -> str {
