@@ -13,7 +13,7 @@ with entry {
 
 
 import from mtllm.llm {Model}
-import from mtllm.types {Image, Video}
+import from mtllm.types {Image, Video, Text}
 import from tools {RagEngine}
 import os;
 import base64;
@@ -48,8 +48,6 @@ Do NOT use:
   "arguments": [{"key": "query", "value": "weather..."}]
 }
 
-
-
 arguments should be a dictionary with the required parameters for the tool. arguments={"query": "example"}
 """
 def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
@@ -59,15 +57,12 @@ def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
     return result;
 }
 
-def describe_image(img: Image) -> str by llm();
 
-def summarize_video(video: Video) -> str by llm(method="Chain-of-Thoughts");
 
 node Session {
     has id: str;
     has chat_history: list[dict];
     has status: int = 1;
-    has uploaded_media: list[dict] = [];
 
     "Generate a helpful response to the user's message. Use available mcp tool when needed. Consider any uploaded media context."
     def respond(message:str, chat_history:list[dict]) -> str
@@ -77,6 +72,10 @@ node Session {
             messages=chat_history,
             max_react_iterations=6
         );
+    
+    def chat_with_image(img: Image, text: Text) -> str by llm();
+
+    def chat_with_video(video: Video, text: Text) -> str by llm(method="Chain-of-Thoughts");
 }
 
 
@@ -128,6 +127,7 @@ walker analyze_image {
     has file_name: str;
     has file_data: str;
     has session_id: str;
+    has message: str = None;
 
     can init_session with `root entry {
          visit [-->](`?Session)(?id == self.session_id) else {
@@ -137,7 +137,7 @@ walker analyze_image {
         }
     }
 
-    can describe with Session entry {
+    can chat with Session entry {
         if not os.path.exists('uploads') {
             os.makedirs('uploads');
         }
@@ -147,22 +147,25 @@ walker analyze_image {
             f.write(data);
         }
         img = Image(file_path);
-        desc = describe_image(img);
-        
-        # Store media context in session
-        media_info = {
-            "type": "image",
-            "file_name": self.file_name,
-            "file_path": file_path,
-            "description": desc
-        };
-        here.uploaded_media.append(media_info);
+        text = self.message if self.message else "Describe the image content.";
+        desc = here.chat_with_image(img, text);
         
         # Add to chat history as a system message about the uploaded image
         context_msg = f"User uploaded an image '{self.file_name}'. Analysis: {desc}";
         here.chat_history.append({"role": "system", "content": context_msg});
         
-        report {"description": desc};
+        if self.message {
+            here.chat_history.append({"role": "user", "content": self.message});
+            response = here.chat_with_image(
+                img=img,
+                text=self.message,
+                chat_history=here.chat_history
+            );
+            here.chat_history.append({"role": "assistant", "content": response});
+            report {"description": desc, "response": response};
+        } else {
+            report {"description": desc};
+        }
     }
 }
 
@@ -170,6 +173,7 @@ walker analyze_video {
     has file_name: str;
     has file_data: str;
     has session_id: str;
+    has message: str = None;
 
     can init_session with `root entry {
          visit [-->](`?Session)(?id == self.session_id) else {
@@ -189,21 +193,24 @@ walker analyze_video {
             f.write(data);
         }
         video = Video(file_path, 1);
-        summary = summarize_video(video);
-        
-        # Store media context in session
-        media_info = {
-            "type": "video",
-            "file_name": self.file_name,
-            "file_path": file_path,
-            "summary": summary
-        };
-        here.uploaded_media.append(media_info);
+        text = self.message if self.message else "Summarize the video content.";
+        summary = here.chat_with_video(video, text);
         
         # Add to chat history as a system message about the uploaded video
         context_msg = f"User uploaded a video '{self.file_name}'. Summary: {summary}";
         here.chat_history.append({"role": "system", "content": context_msg});
         
-        report {"summary": summary};
+        if self.message {
+            here.chat_history.append({"role": "user", "content": self.message});
+            response = here.chat_with_video(
+                video=video,
+                text=self.message,
+                chat_history=here.chat_history
+            );
+            here.chat_history.append({"role": "assistant", "content": response});
+            report {"summary": summary, "response": response};
+        } else {
+            report {"summary": summary};
+        }
     }
 }
