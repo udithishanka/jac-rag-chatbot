@@ -1,17 +1,4 @@
 import sys;
-import logging;
-
-# Configure logging
-with entry {
-    logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    stream=sys.stdout,
-    force=True
-);
-}
-
-
 import from mtllm.llm {Model}
 import from mtllm.types {Image, Video, Text}
 import from tools {RagEngine}
@@ -22,7 +9,7 @@ import anyio;
 import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
-glob llm = Model(model_name='gpt-4o-mini', verbose=True);
+glob llm = Model(model_name='gpt-4o-mini');
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
 
@@ -36,12 +23,8 @@ Example:
 }
 """
 def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
-    logging.info(f"Calling tool '{name}' with arguments: {arguments}");
-    result = mcp_client.call_mcp_tool(name=name, arguments=arguments);
-    logging.info(f"Tool '{name}' returned result: {result}");
-    return result;
+    return mcp_client.call_mcp_tool(name=name, arguments=arguments);;
 }
-
 
 
 node Session {
