@@ -6,23 +6,84 @@ import base64;
 def bootstrap_frontend(token: str) {
     st.set_page_config(layout="wide");
     st.title("Welcome to your Jac MCP Chatbot!");
-    # Initialize chat history
+    
+    # Initialize session state
     if "messages" not in st.session_state {
         st.session_state.messages = [];
     }
+    if "session_id" not in st.session_state {
+        st.session_state.session_id = "user_session_123";
+    }
 
-    uploaded_file = st.file_uploader('Upload PDF');
+    uploaded_file = st.file_uploader('Upload File (PDF, TXT, Image, or Video)');
     if uploaded_file {
         file_b64 = base64.b64encode(uploaded_file.read()).decode('utf-8');
+        
+        # Determine file type and endpoint
+        file_extension = uploaded_file.name.lower().split('.')[-1];
+        file_type = uploaded_file.type or '';
+        
+        if file_extension == 'pdf' or file_type == 'application/pdf' {
+            # Handle PDF files
+            endpoint = 'upload_pdf';
+            payload = {"file_name": uploaded_file.name, "file_data": file_b64};
+            success_msg = f"Uploaded PDF: {uploaded_file.name}";
+        } elif file_extension == 'txt' or file_type == 'text/plain' {
+            # Handle TXT files (use PDF endpoint for now, or create separate if needed)
+            endpoint = 'upload_pdf';
+            payload = {"file_name": uploaded_file.name, "file_data": file_b64};
+            success_msg = f"Uploaded text file: {uploaded_file.name}";
+        } elif file_type and file_type.startswith('image') {
+            # Handle image files
+            endpoint = 'analyze_image';
+            payload = {
+                "file_name": uploaded_file.name, 
+                "file_data": file_b64,
+                "session_id": st.session_state.session_id
+            };
+            success_msg = f"Processed image: {uploaded_file.name}";
+        } elif file_type and file_type.startswith('video') {
+            # Handle video files
+            endpoint = 'analyze_video';
+            payload = {
+                "file_name": uploaded_file.name, 
+                "file_data": file_b64,
+                "session_id": st.session_state.session_id
+            };
+            success_msg = f"Processed video: {uploaded_file.name}";
+        } else {
+            st.error(f"Unsupported file type: {file_type or 'unknown'}. Please upload PDF, TXT, Image, or Video files.");
+            return;
+        }
+        
+        # Make the API call
         response = requests.post(
-            "http://localhost:8000/walker/upload_pdf",
-            json={"file_name": uploaded_file.name, "file_data": file_b64},
+            f"http://localhost:8000/walker/{endpoint}",
+            json=payload,
             headers={"Authorization": f"Bearer {token}"}
         );
+        
         if response.status_code == 200 {
-            st.success(f"Uploaded {uploaded_file.name}");
+            res = response.json();
+            
+            # Handle different response types
+            if endpoint in ['analyze_image', 'analyze_video'] {
+                msg = res["reports"][0].get("description") or res["reports"][0].get("summary");
+                file_type_name = "image" if endpoint == 'analyze_image' else "video";
+                analysis_message = f"I've analyzed your {file_type_name}: {msg}. Feel free to ask me any questions about it!";
+                st.session_state.messages.append({"role": "assistant", "content": analysis_message});
+            }
+            
+            st.success(success_msg);
         } else {
-            st.error(f"Failed to upload {uploaded_file.name}");
+            st.error(f"Failed to process {uploaded_file.name}: {response.text}");
+        }
+    }
+
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages {
+        with st.chat_message(message["role"]) {
+            st.markdown(message["content"]);
         }
     }
 
@@ -40,7 +101,10 @@ def bootstrap_frontend(token: str) {
                 # Call walker API
                 response = requests.post(
                     "http://localhost:8000/walker/interact",
-                    json={"message": prompt, "session_id": "123"},
+                    json={
+                        "message": prompt, 
+                        "session_id": st.session_state.session_id
+                    },
                     headers={"Authorization": f"Bearer {token}"}
                 );
 

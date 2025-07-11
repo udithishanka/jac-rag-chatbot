@@ -1,6 +1,6 @@
 import sys;
 import os;
-import from rag {RagEngine, WebSearch}
+import from tools {RagEngine, WebSearch}
 import from mcp.server.fastmcp.tools {Tool}
 import from mcp.server.fastmcp {FastMCP}
 import typing;
