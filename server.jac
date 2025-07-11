@@ -29,26 +29,11 @@ glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mc
 """Available tools: 'search_docs' or 'search_web' with {"query": "your query"}.
 
 Only use a dictionary with plain key-value string pairs for `arguments`.
-
-Correct:
+Example:
 {
   "name": "search_web",
-  "arguments": {"query": "weather in Moratuwa, Sri Lanka"}
+  "arguments": {"query": "example search"}
 }
-
-Correct:
-{
-  "name": "search_docs",
-  "arguments": {"query": "example"}
-}
-
-Do NOT use:
-{
-  "name": "search_web",
-  "arguments": [{"key": "query", "value": "weather..."}]
-}
-
-arguments should be a dictionary with the required parameters for the tool. arguments={"query": "example"}
 """
 def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
     logging.info(f"Calling tool '{name}' with arguments: {arguments}");
