@@ -1,6 +1,19 @@
 import sys;
+import logging;
+
+# Configure logging
+with entry {
+    logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    stream=sys.stdout,
+    force=True
+);
+}
+
+
 import from mtllm.llm {Model}
-import from rag {RagEngine, WebSearch}
+import from tools {RagEngine}
 import os;
 import base64;
 import requests;
@@ -8,19 +21,34 @@ import anyio;
 import mcp_client;
 
 glob rag_engine:RagEngine = RagEngine();
-glob llm = Model(model_name='gpt-4o');
+glob llm = Model(model_name='gpt-4o-mini', verbose=True);
 glob MCP_SERVER_URL: str = os.getenv('MCP_SERVER_URL', 'http://localhost:8899/mcp');
 
 
 """Available tools: 'search_docs' or 'search_web' with {"query": "your query"}.
 
-Example:
-{"name": "search_docs", "arguments": {"query": "example"}}
-"""
-def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
-    return mcp_client.call_mcp_tool(name=name, arguments=arguments);
+Only use a dictionary with plain key-value string pairs for `arguments`.
+
+Correct:
+{
+  "name": "search_web",
+  "arguments": {"query": "weather in Moratuwa, Sri Lanka"}
 }
 
+Do NOT use:
+{
+  "name": "search_web",
+  "arguments": [{"key": "query", "value": "weather..."}]
+}
+
+arguments should be a dictionary with the required parameters for the tool. arguments={"query": "example"}
+"""
+def use_mcp_tool(name: str, arguments: dict[str, str]) -> str {
+    logging.info(f"Calling tool '{name}' with arguments: {arguments}");
+    result = mcp_client.call_mcp_tool(name=name, arguments=arguments);
+    logging.info(f"Tool '{name}' returned result: {result}");
+    return result;
+}
 
 node Session {
     has id: str;

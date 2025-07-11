@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.tools import Tool
-from rag import RagEngine, WebSearch
+from tools import RagEngine, WebSearch
 
 rag_engine = RagEngine()
 web_search = WebSearch()
